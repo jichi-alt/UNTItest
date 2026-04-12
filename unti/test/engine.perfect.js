@@ -328,26 +328,39 @@ const SUB_PERSONALITY_DESC = {
 
 function calculatePersonality(answers) {
   let scores = { A: 0, E: 0, S: 0, W: 0, D: 0 };
+  let selectedUR = false;
 
+  // 先累计所有分数
   for (let i = 0; i < answers.length; i++) {
     const option = QUESTIONS[i].options[answers[i]];
 
-    // UR触发 - 充分放宽条件
-    if (i === 15 && option.UR) {
-      // 30%概率触发ALIEN（增加随机性）
-      if (Math.random() < 0.3 || scores.E > 5) {
-        return {
-          personality: "ALIEN",
-          scores,
-          subType: "default",
-          trigger: "UR",
-          desc: SUB_PERSONALITY_DESC["无法被理解的观察者"]
-        };
-      }
+    // 记录是否选中UR选项
+    if (i === 15 && option.scores && option.scores.UR) {
+      selectedUR = true;
     }
 
     for (const [key, val] of Object.entries(option.scores)) {
       if (key in scores) scores[key] += val;
+    }
+  }
+
+  // UR触发逻辑 - 在分数完全累计后判断
+  if (selectedUR) {
+    // 条件1: 高内耗的局外人 (E >= 6)
+    // 条件2: 看透但被困 (A >= 4 && E >= 4)
+    // 条件3: 随机30%隐藏款
+    const isHighE = scores.E >= 6;
+    const isAwakeButTrapped = scores.A >= 4 && scores.E >= 4;
+    const isRandomLuck = Math.random() < 0.3;
+
+    if (isHighE || isAwakeButTrapped || isRandomLuck) {
+      return {
+        personality: "ALIEN",
+        scores,
+        subType: "default",
+        trigger: "UR",
+        desc: SUB_PERSONALITY_DESC["无法被理解的观察者"]
+      };
     }
   }
 
