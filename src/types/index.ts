@@ -45,7 +45,8 @@ export interface TestResult {
   personality: string;
   scores: Scores;
   subType: string;
-  trigger: 'UR' | 'SSR' | 'Max-Vector';
+  trigger: 'UR' | 'SSR' | 'Max-Vector' | 'Vector-Match' | 'Low-Similarity';
+  confidence?: number;
 }
 
 // 答题状态

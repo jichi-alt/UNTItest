@@ -4,6 +4,64 @@ import personalitiesData from '../data/personalities.json';
 
 export const QUESTIONS: Question[] = questionsData.questions;
 
+// 人格特征向量定义（基于心理学人格模型）
+// 每个人格有一个理想特征向量，表示该人格在各维度的典型表现
+const PERSONALITY_VECTORS: Record<string, { vector: Scores; name: string }> = {
+  KING: {
+    name: '高效行动派',
+    vector: { A: 8, E: -4, S: 0, W: -2, D: 2 }  // 高执行力、低内耗、适度DDL
+  },
+  FLOP: {
+    name: '仰卧者',
+    vector: { A: -6, E: 4, S: 0, W: 2, D: -2 }  // 低执行力、高内耗
+  },
+  NULL: {
+    name: '隐形NPC',
+    vector: { A: -2, E: -2, S: -6, W: -2, D: -2 }  // 低社交、低各项
+  },
+  OOPS: {
+    name: '「哦，天哪」者',
+    vector: { A: 0, E: 6, S: 0, W: 2, D: 0 }  // 高内耗、事故体质
+  },
+  PURE: {
+    name: '清澈者',
+    vector: { A: 0, E: 0, S: 8, W: -4, D: 0 }  // 高社交、低发疯
+  },
+  WILD: {
+    name: '发疯者',
+    vector: { A: 0, E: -2, S: 2, W: 8, D: 0 }  // 高发疯
+  },
+  FIRE: {
+    name: '赶Due狂徒',
+    vector: { A: 0, E: 2, S: 0, W: 2, D: 8 }  // 高DDL依赖
+  },
+  FREE: {
+    name: '旷野行者',
+    vector: { A: 4, E: -4, S: 0, W: 4, D: 0 }  // 中等执行力、低内耗、高自由
+  },
+  ALIEN: {
+    name: '高维局外人',
+    vector: { A: 4, E: 6, S: -4, W: 4, D: 0 }  // 高内耗+高执行力矛盾体
+  }
+};
+
+// 计算余弦相似度
+function cosineSimilarity(a: Scores, b: Scores): number {
+  const dims: (keyof Scores)[] = ['A', 'E', 'S', 'W', 'D'];
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (const dim of dims) {
+    dotProduct += a[dim] * b[dim];
+    normA += a[dim] * a[dim];
+    normB += b[dim] * b[dim];
+  }
+
+  if (normA === 0 || normB === 0) return 0;
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 // 计算人格
 export function calculatePersonality(answers: number[]): TestResult {
   const scores: Scores = { A: 0, E: 0, S: 0, W: 0, D: 0 };
@@ -26,7 +84,7 @@ export function calculatePersonality(answers: number[]): TestResult {
     }
   }
 
-  // UR 触发逻辑
+  // UR 触发逻辑（保持原有特殊触发）
   if (selectedUR) {
     const isObserver = scores.E >= 5 && scores.S <= -3;
     const isAwakeButTrapped = scores.A >= 4 && scores.E >= 4;
@@ -42,7 +100,7 @@ export function calculatePersonality(answers: number[]): TestResult {
     }
   }
 
-  // SSR 触发逻辑
+  // SSR 触发逻辑（保持原有特殊触发）
   if (scores.A >= 2 && scores.A <= 6 && scores.E <= -2 && scores.W >= 2) {
     return {
       personality: 'FREE',
@@ -52,35 +110,43 @@ export function calculatePersonality(answers: number[]): TestResult {
     };
   }
 
-  // Max-Vector 极值算法
-  const dims: (keyof Scores)[] = ['A', 'E', 'S', 'W', 'D'];
-  let maxAbs = -1;
-  let dominant: keyof Scores = 'A';
-  let isNegative = false;
+  // 计算与每个人格的相似度
+  const similarities: { personality: string; similarity: number }[] = [];
 
-  for (const key of dims) {
-    const val = scores[key];
-    const absVal = Math.abs(val);
-    if (absVal > maxAbs) {
-      maxAbs = absVal;
-      dominant = key;
-      isNegative = val < 0;
-    }
+  for (const [personality, data] of Object.entries(PERSONALITY_VECTORS)) {
+    // 跳过特殊人格
+    if (personality === 'FREE' || personality === 'ALIEN') continue;
+
+    const similarity = cosineSimilarity(scores, data.vector);
+    similarities.push({ personality, similarity });
   }
 
-  // 人格映射
-  const mapping: Record<keyof Scores, string> = {
-    'A': isNegative ? 'FLOP' : 'KING',
-    'E': isNegative ? 'NULL' : 'OOPS',
-    'S': isNegative ? 'NULL' : 'PURE',
-    'W': 'WILD',
-    'D': 'FIRE'
-  };
+  // 按相似度排序
+  similarities.sort((a, b) => b.similarity - a.similarity);
 
-  const personality = mapping[dominant];
+  // 获取最佳匹配
+  const bestMatch = similarities[0];
+
+  // 如果相似度太低（< 0.3），说明没有明显倾向，判为 NULL
+  if (bestMatch.similarity < 0.3) {
+    return {
+      personality: 'NULL',
+      scores,
+      subType: determineSubType('NULL', scores),
+      trigger: 'Low-Similarity'
+    };
+  }
+
+  const personality = bestMatch.personality;
   const subType = determineSubType(personality, scores);
 
-  return { personality, scores, subType, trigger: 'Max-Vector' };
+  return {
+    personality,
+    scores,
+    subType,
+    trigger: 'Vector-Match',
+    confidence: bestMatch.similarity
+  };
 }
 
 // 确定副人格
