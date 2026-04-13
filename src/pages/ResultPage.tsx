@@ -68,13 +68,18 @@ export default function ResultPage() {
 
         {/* 人格名称 */}
         <div className="text-center mb-4">
-          <span className="text-3xl mr-1">{personalityInfo?.emoji}</span>
-          <span className="text-xl font-bold">{personalityInfo?.name}</span>
-          {personalityInfo?.rare !== 'N' && (
-            <span className="ml-2 px-1.5 py-0.5 text-xs font-bold bg-black text-white rounded">
-              {personalityInfo?.rare}
-            </span>
-          )}
+          <div className="text-4xl font-black tracking-wider text-gray-800 mb-1">
+            {result.personality}
+          </div>
+          <div className="flex items-center justify-center">
+            <span className="text-3xl mr-1">{personalityInfo?.emoji}</span>
+            <span className="text-xl font-bold">{personalityInfo?.name}</span>
+            {personalityInfo?.rare !== 'N' && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs font-bold bg-black text-white rounded">
+                {personalityInfo?.rare}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* 锐评 */}
