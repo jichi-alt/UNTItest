@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 export default function LandingPage() {
   const navigate = useNavigate();
 
+  const handleStart = () => {
+    // 清除旧的测试数据
+    sessionStorage.removeItem('quiz_answers');
+    sessionStorage.removeItem('quiz_scores');
+    sessionStorage.removeItem('quiz_result');
+    navigate('/quiz');
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       {/* Logo */}
@@ -31,14 +39,14 @@ export default function LandingPage() {
       {/* 开始按钮 */}
       <button
         className="btn-outline text-lg px-8 py-4"
-        onClick={() => navigate('/quiz')}
+        onClick={handleStart}
       >
         开始测试
       </button>
 
       {/* 底部信息 */}
       <p className="mt-12 text-sm text-gray-400">
-        共 16 题 · 约 3 分钟
+        共 17 题 · 约 3 分钟
       </p>
     </div>
   );

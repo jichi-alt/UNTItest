@@ -1,13 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getPersonalityInfo, generateArchiveId, getAuthorNote } from '../utils/engine';
-import type { Scores } from '../types';
+import type { Scores, TestResult } from '../types';
 
 export default function ResultPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const result = location.state?.result;
-  const scores: Scores = location.state?.scores || { A: 0, E: 0, S: 0, W: 0, D: 0 };
+
+  // 从 location.state 或 sessionStorage 获取结果
+  const [result, setResult] = useState<TestResult | null>(null);
+  const [scores, setScores] = useState<Scores>({ A: 0, E: 0, S: 0, W: 0, D: 0 });
+
+  useEffect(() => {
+    let res = location.state?.result;
+    let sc = location.state?.scores;
+
+    if (!res) {
+      const storedResult = sessionStorage.getItem('quiz_result');
+      const storedScores = sessionStorage.getItem('quiz_scores');
+      if (storedResult) {
+        res = JSON.parse(storedResult);
+        sc = storedScores ? JSON.parse(storedScores) : null;
+      }
+    }
+
+    if (res) {
+      setResult(res);
+      if (sc) setScores(sc);
+    }
+  }, [location.state]);
+
   const [showAuthorNote, setShowAuthorNote] = useState(false);
 
   if (!result) {
@@ -155,7 +177,13 @@ export default function ResultPage() {
         <div className="flex gap-3">
           <button
             className="btn-outline flex-1 text-sm"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              // 清除 sessionStorage
+              sessionStorage.removeItem('quiz_answers');
+              sessionStorage.removeItem('quiz_scores');
+              sessionStorage.removeItem('quiz_result');
+              navigate('/');
+            }}
           >
             再测一次
           </button>

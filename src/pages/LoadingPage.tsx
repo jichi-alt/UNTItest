@@ -8,8 +8,18 @@ export default function LoadingPage() {
   const [loadingText, setLoadingText] = useState('');
 
   useEffect(() => {
-    const answers = location.state?.answers;
-    const scores = location.state?.scores;
+    // 优先从 location.state 获取，否则从 sessionStorage 获取
+    let answers = location.state?.answers;
+    let scores = location.state?.scores;
+
+    if (!answers) {
+      const storedAnswers = sessionStorage.getItem('quiz_answers');
+      const storedScores = sessionStorage.getItem('quiz_scores');
+      if (storedAnswers) {
+        answers = JSON.parse(storedAnswers);
+        scores = storedScores ? JSON.parse(storedScores) : null;
+      }
+    }
 
     if (!answers) {
       navigate('/');
@@ -30,6 +40,8 @@ export default function LoadingPage() {
     // 2秒后跳转
     const timer = setTimeout(() => {
       const result = calculatePersonality(answers);
+      // 保存结果到 sessionStorage
+      sessionStorage.setItem('quiz_result', JSON.stringify(result));
       navigate('/result', { state: { result, scores } });
     }, 2000);
 

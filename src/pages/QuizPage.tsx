@@ -43,6 +43,10 @@ export default function QuizPage() {
       setCurrentIndex(prev => prev + 1);
       setIsTransitioning(false);
     } else {
+      // 保存答案到 sessionStorage，防止刷新丢失
+      sessionStorage.setItem('quiz_answers', JSON.stringify(newAnswers));
+      sessionStorage.setItem('quiz_scores', JSON.stringify(newScores));
+
       // 跳转到加载页
       navigate('/loading', { state: { answers: newAnswers, scores: newScores } });
     }
